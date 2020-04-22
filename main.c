@@ -15,12 +15,13 @@ static void on_timer(int id);
 
 
 
-
 float animation_ongoing = 0;
 float animation_parameter = 0.0;
-int drop = 0;
+//visina bloka
+float h = 0.4;
 
 void base_cube();
+void moving_cubes();
 
 int main(int argc, char **argv){
     /* Inicijalizacija */
@@ -39,10 +40,10 @@ int main(int argc, char **argv){
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
-    glEnable(GL_COLOR_MATERIAL);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
+    glEnable(GL_COLOR_MATERIAL);
 
     
     float light_position[] = {-2, 3, 2, 1};
@@ -54,10 +55,10 @@ int main(int argc, char **argv){
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
-    
-    
 
-    
+
+
+
     glClearColor(0.7, 0.7, 0.7, 0);
     glutMainLoop();
 
@@ -98,12 +99,6 @@ void on_keyboard(unsigned char key, int x, int y) {
                 glutTimerFunc(TIMER_INTERVAL, on_timer, TIMER_ID);
             }
             break;
-        case 'r': // restart animation
-        case 'R':
-            animation_parameter = 0;
-            glutPostRedisplay();
-            break;
-
         case 27:
           exit(0);
           break;
@@ -114,6 +109,9 @@ void on_timer(int id) {
     if (id != TIMER_ID) 
         return;
         
+    
+    animation_parameter ++;
+   
     
     
     glutPostRedisplay();
@@ -138,6 +136,18 @@ void base_cube() {
     glutSolidCube(1);
 }
 
+void moving_cubes() {
+    
+            
+        glPushMatrix();
+            glColor3f(0.6, 0.2, 0.2);
+            glTranslatef(0 - 5*cos(animation_parameter/40.0), h, 0);
+            glScalef(2, 0.3, 2);
+            glutSolidCube(1);
+        glPopMatrix();
+        
+
+}
 
 
 void on_display() {
@@ -147,7 +157,7 @@ void on_display() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    
+
     gluLookAt(7, 10, 10,
               0, 0, 0,
               0, 1, 0);
@@ -161,15 +171,18 @@ void on_display() {
     glPopMatrix();
     
 
-    
+     
+    glPushMatrix();
+        moving_cubes();
+    glPopMatrix();
+
+
     
     glutSwapBuffers();
 }
-    
 
     
     
     
     
-    
-    
+
