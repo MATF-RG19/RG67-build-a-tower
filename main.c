@@ -13,24 +13,47 @@ static void on_reshape(int width, int height);
 static void on_keyboard(unsigned char key, int x, int y);
 static void on_timer(int id);
 
+struct Block {
+    
+    float y;
+    float x;
+
+};
+
+struct Block* blocks;
 
 
 float animation_ongoing = 0;
 float animation_parameter = 0.0;
+//indikator za spustanje bloka
+int drop = 0;
 //visina bloka
 float h = 0.4;
+//brojac blokova
+int i = 0;
+int lr = 1;
+int mem = 50;
 
 void base_cube();
-void moving_cubes();
+void moving_cubes(float y);
+void draw_cube(float x, float y);
+void checkMem();
 
 int main(int argc, char **argv){
     /* Inicijalizacija */
     
+
+    blocks = malloc(mem * sizeof(struct Block));
+    if (blocks == NULL) {
+        fprintf(stderr, "Greska u alokaciji memorije\n");
+        exit(1);
+    }
+
     
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
 
-    glutInitWindowSize(800, 800);
+    glutInitWindowSize(900, 900);
     glutInitWindowPosition(100, 100);
     glutCreateWindow(argv[0]);
 
@@ -40,6 +63,7 @@ int main(int argc, char **argv){
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,1);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -91,6 +115,7 @@ void on_keyboard(unsigned char key, int x, int y) {
     switch(key) {
         case 'd': // drop block 
         case 'D':
+            drop = 1;
             break;
         case 's': // start animation
         case 'S':
@@ -113,6 +138,18 @@ void on_timer(int id) {
     animation_parameter ++;
    
     
+    if (drop) {
+        
+        checkMem();
+        blocks[i].x = - lr*5*cos(animation_parameter/40.0);
+        blocks[i].y = h - 0.1;
+        
+        lr *= -1;
+        h += 0.3;
+        animation_parameter = 0;
+        i ++;
+        
+    }
     
     glutPostRedisplay();
 
@@ -136,18 +173,31 @@ void base_cube() {
     glutSolidCube(1);
 }
 
-void moving_cubes() {
+void moving_cubes(float y) {
     
             
         glPushMatrix();
             glColor3f(0.6, 0.2, 0.2);
-            glTranslatef(0 - 5*cos(animation_parameter/40.0), h, 0);
+            glTranslatef(0 - lr*5*cos(animation_parameter/40.0), y, 0);
             glScalef(2, 0.3, 2);
             glutSolidCube(1);
         glPopMatrix();
         
 
 }
+
+void draw_cube(float x, float y) {
+    
+    glPushMatrix();
+        glColor3f(0.6, 0.2, 0.2);
+        glTranslatef(x, y, 0);
+        glScalef(2, 0.3, 2);
+        glutSolidCube(1);
+    glPopMatrix();
+}
+
+
+
 
 
 void on_display() {
@@ -173,16 +223,41 @@ void on_display() {
 
      
     glPushMatrix();
-        moving_cubes();
+        moving_cubes(h);
     glPopMatrix();
+    
+    
+        
+        for (int j = 0;j < i;j ++) {
 
+        glPushMatrix();
+            draw_cube(blocks[j].x, blocks[j].y);
+        glPopMatrix();
+        
+         drop = 0;
+    }
 
+    
     
     glutSwapBuffers();
 }
+    
+void checkMem(){
 
-    
-    
-    
-    
+    if(i == mem) {
 
+        mem = mem * 2;
+        blocks = realloc(blocks, mem * sizeof(struct Block));
+        
+        if (blocks == NULL) {
+            printf("Neuspela realokacija\n");
+            exit(1);
+        }
+    }
+}
+    
+    
+    
+    
+    
+    
