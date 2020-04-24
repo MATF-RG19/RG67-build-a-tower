@@ -28,11 +28,13 @@ float animation_parameter = 0.0;
 //indikator za spustanje bloka
 int drop = 0;
 //visina bloka
-float h = 0.4;
+float h = 0.4 - 3.0;
 //brojac blokova
 int i = 0;
 int lr = 1;
 int mem = 50;
+float cameraEye = 0.0;
+float cameraCenter = 0.0;
 
 void base_cube();
 void moving_cubes(float y);
@@ -68,7 +70,6 @@ int main(int argc, char **argv){
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_COLOR_MATERIAL);
-
     
     float light_position[] = {-2, 3, 2, 1};
     float light_ambient[] = {.2f, .2f, .2f, 1};
@@ -125,8 +126,8 @@ void on_keyboard(unsigned char key, int x, int y) {
             }
             break;
         case 27:
-          exit(0);
-          break;
+        exit(0);
+        break;
     }
 }
 
@@ -134,9 +135,34 @@ void on_timer(int id) {
     if (id != TIMER_ID) 
         return;
         
+    float pom;
     
-    animation_parameter ++;
-   
+    if (i < 5) {
+        animation_parameter ++;
+        pom = 0.002;
+    }
+    else if (i >= 5 && i <= 10) {
+        animation_parameter += 1.3;
+        pom = 0.003;
+    }
+    else if (i >= 11 && i < 20) {
+        animation_parameter += 1.7;
+        pom = 0.005;
+    }
+    else if (i >= 20 && i < 30){
+        animation_parameter += 2.0;
+        pom = 0.006;
+    }
+    else {
+        animation_parameter += 2.5;
+        pom = 0.008;
+    }
+    
+    if (i > 15 && animation_parameter < 100)
+        cameraEye += 0.2;
+    
+    if (animation_parameter < 100)
+        cameraCenter += pom;
     
     if (drop) {
         
@@ -144,10 +170,13 @@ void on_timer(int id) {
         blocks[i].x = - lr*5*cos(animation_parameter/40.0);
         blocks[i].y = h - 0.1;
         
+        
         lr *= -1;
         h += 0.3;
         animation_parameter = 0;
         i ++;
+         if (i > 1) 
+            cameraCenter += 0.05;
         
     }
     
@@ -169,6 +198,7 @@ void on_reshape(int width, int height) {
 void base_cube() {
     
     glColor3f(0.8, 0.2, 0.2);
+    glTranslatef(- 0.8, -3.0, 0);
     glScalef(2, 0.3, 2);
     glutSolidCube(1);
 }
@@ -178,7 +208,7 @@ void moving_cubes(float y) {
             
         glPushMatrix();
             glColor3f(0.6, 0.2, 0.2);
-            glTranslatef(0 - lr*5*cos(animation_parameter/40.0), y, 0);
+            glTranslatef(- 0.8 - lr*5*cos(animation_parameter/40.0), y, 0);
             glScalef(2, 0.3, 2);
             glutSolidCube(1);
         glPopMatrix();
@@ -190,7 +220,7 @@ void draw_cube(float x, float y) {
     
     glPushMatrix();
         glColor3f(0.6, 0.2, 0.2);
-        glTranslatef(x, y, 0);
+        glTranslatef(x- 0.8, y, 0);
         glScalef(2, 0.3, 2);
         glutSolidCube(1);
     glPopMatrix();
@@ -207,9 +237,10 @@ void on_display() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-
-    gluLookAt(7, 10, 10,
-              0, 0, 0,
+    // 7 10 10
+    //2 5 10
+    gluLookAt(7, 5 + cameraEye/20.0, 10,
+              0, 0 + cameraCenter, 0,
               0, 1, 0);
     
 
@@ -261,3 +292,4 @@ void checkMem(){
     
     
     
+
