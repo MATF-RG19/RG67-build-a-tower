@@ -21,7 +21,7 @@ struct Block {
 
 };
 
-struct Block* blocks;
+struct Block blocks[100];
 
 
 float animation_ongoing = 0;
@@ -32,27 +32,17 @@ int drop = 0;
 float h = 0.4 - 3.0;
 //brojac blokova
 int i = 0;
-//indikator da li blok dolazi sleva ili sdesna
 int lr = 1;
 float color = 0.2;
-int mem = 50;
 float cameraEye = 0.0;
 float cameraCenter = 0.0;
 
 void base_cube();
 void moving_cubes(float y, float color);
 void draw_cube(float x, float y, float color);
-void checkMem();
 
 int main(int argc, char **argv){
     /* Inicijalizacija */
-    
-
-    blocks = malloc(mem * sizeof(struct Block));
-    if (blocks == NULL) {
-        fprintf(stderr, "Greska u alokaciji memorije\n");
-        exit(1);
-    }
 
     
     glutInit(&argc, argv);
@@ -200,11 +190,14 @@ void on_timer(int id) {
     
     if (drop) {
         
-        checkMem();
         blocks[i].x = - lr*5*cos(animation_parameter/40.0);
         blocks[i].y = h - 0.1;
         blocks[i].color = color;
         
+	if (fabs(blocks[i].x - blocks[i-1].x) > 2.0 || i == 99) {
+		animation_ongoing = 0;
+	}
+
         lr *= -1;
         h += 0.3;
         if (color >= 1.0)
@@ -310,16 +303,3 @@ void on_display() {
     glutSwapBuffers();
 }
     
-void checkMem(){
-
-    if(i == mem) {
-
-        mem = mem * 2;
-        blocks = realloc(blocks, mem * sizeof(struct Block));
-        
-        if (blocks == NULL) {
-            printf("Neuspela realokacija\n");
-            exit(1);
-        }
-    }
-}
