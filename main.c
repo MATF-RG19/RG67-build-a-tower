@@ -37,9 +37,15 @@ float color = 0.2;
 float cameraEye = 0.0;
 float cameraCenter = 0.0;
 
+int n;
+int end = 0;
+
 void base_cube();
 void moving_cubes(float y, float color);
 void draw_cube(float x, float y, float color);
+int nth_block();
+
+
 
 int main(int argc, char **argv){
     /* Inicijalizacija */
@@ -48,7 +54,7 @@ int main(int argc, char **argv){
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
 
-    glutInitWindowSize(900, 900);
+    glutInitWindowSize(800, 800);
     glutInitWindowPosition(100, 100);
     glutCreateWindow(argv[0]);
 
@@ -58,7 +64,6 @@ int main(int argc, char **argv){
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
-    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,1);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -128,92 +133,143 @@ void on_timer(int id) {
     if (id != TIMER_ID) 
         return;
         
-    float pom;
+    if (!end) {
     
-    if (i < 5) {
-            animation_parameter ++;
-            pom = 0.002;
-        }
-        else if (i >= 5 && i <= 10) {
-            animation_parameter += 1.5;
-            pom = 0.003;
-        }
-        else if (i >= 11 && i < 20) {
-            animation_parameter += 1.8;
-            pom = 0.005;
-        }
-        else if (i >= 20 && i < 30){
-            animation_parameter += 2.2;
-            pom = 0.007;
-        }
-        else if (i >= 30 && i < 40){
-            animation_parameter += 2.6;
-            pom = 0.009;
-        }
-        else if (i >= 40 && i < 50) {
-            animation_parameter += 3.0;
-            pom = 0.011;
-        }
-        else if (i >= 50 && i <= 60){
-            animation_parameter += 3.5;
-            pom = 0.014;
-        }
-        else if (i >= 60 && i <= 70){
-            animation_parameter += 3.9;
-            pom = 0.016;
-        }
-        else if (i >= 70 && i <= 80){
-            animation_parameter += 4.3;
-            pom = 0.019;
-        }
-        else if (i >= 80 && i <= 90){
-            animation_parameter += 4.5;
-            pom = 0.022;
-        }
-        else {
-            animation_parameter += 4.7;
-            pom = 0.024;
-        }
+        float pom;
         
-        if (i > 10 && i <= 40 && animation_parameter < 100) {
-            cameraEye += 0.2;
-            cameraEye += pom;
-        }
-        
-        if (i > 40 && animation_parameter < 100) {
-            cameraEye += 0.3;
-            cameraEye += pom;
-        }
-   
-        if (animation_parameter < 100)
-            cameraCenter += pom;
+        if (i < 5) {
+                animation_parameter ++;
+                pom = 0.002;
+            }
+            else if (i >= 5 && i <= 10) {
+                animation_parameter += 1.5;
+                pom = 0.003;
+            }
+            else if (i >= 11 && i < 20) {
+                animation_parameter += 1.8;
+                pom = 0.005;
+            }
+            else if (i >= 20 && i < 30){
+                animation_parameter += 2.2;
+                pom = 0.007;
+            }
+            else if (i >= 30 && i < 40){
+                animation_parameter += 2.6;
+                pom = 0.009;
+            }
+            else if (i >= 40 && i < 50) {
+                animation_parameter += 3.0;
+                pom = 0.011;
+            }
+            else if (i >= 50 && i <= 60){
+                animation_parameter += 3.5;
+                pom = 0.014;
+            }
+            else if (i >= 60 && i <= 70){
+                animation_parameter += 3.9;
+                pom = 0.016;
+            }
+            else if (i >= 70 && i <= 80){
+                animation_parameter += 4.3;
+                pom = 0.019;
+            }
+            else if (i >= 80 && i <= 90){
+                animation_parameter += 4.5;
+                pom = 0.022;
+            }
+            else {
+                animation_parameter += 4.7;
+                pom = 0.024;
+            }
+            
+            if (i > 10 && i <= 40 && animation_parameter < 100) {
+                cameraEye += 0.2;
+                cameraEye += pom;
+            }
+            
+            if (i > 40 && animation_parameter < 100) {
+                cameraEye += 0.3;
+                cameraEye += pom;
+            }
     
-    if (drop) {
+            if (animation_parameter < 100)
+                cameraCenter += pom;
         
-        blocks[i].x = - lr*5*cos(animation_parameter/40.0);
-        blocks[i].y = h - 0.1;
-        blocks[i].color = color;
-        
-	if (fabs(blocks[i].x - blocks[i-1].x) > 2.0 || i == 99) {
-		animation_ongoing = 0;
-	}
+        if (drop) {
+            
+            blocks[i].x = - lr*5*cos(animation_parameter/40.0);
+            blocks[i].y = h - 0.1;
+            blocks[i].color = color;
+            
+            if (fabs(blocks[i].x - blocks[i-1].x) > 2.0) {
+                end = 1;
+                n = i;
+                drop = 0;
+            }
+            else if (i == 99 && !(fabs(blocks[i].x - blocks[i-1].x) > 2.0)) {
+                end = 1;
+                n = 100;
+                drop = 0;
+            }
 
-        lr *= -1;
-        h += 0.3;
-        if (color >= 1.0)
-            color = 0.0;
-        color += 0.1;
-        animation_parameter = 0;
-        i ++;
-         if (i > 1) 
-            cameraCenter += 0.05;
+            lr *= -1;
+            h += 0.3;
+            if (color >= 1.0)
+                color = 0.0;
+            color += 0.1;
+            animation_parameter = 0;
+            i ++;
+            if (i > 1) 
+                cameraCenter += 0.05;
+            
+        }
+    }
+    else {
         
+        
+        
+        if (n < 100) {
+        
+            
+        if (nth_block() == n && (fabs(blocks[n].x) > 2.0)) {
+                if (blocks[n].y >= - 3.0) 
+                    blocks[n].y -= 0.1;
+            }
+            else if (nth_block() == n && !(fabs(blocks[n].x) > 2.0)) {
+                if (blocks[n].y >=  -2.6) 
+                    blocks[n].y -= 0.1;
+            }
+            else {
+                
+                for (int j = n-1; j >= 0;j --) {
+                    
+                    if ((fabs(blocks[n].x - blocks[j].x) > 2.0))
+                        blocks[n].y -= 0.1;
+                    else {
+                        blocks[n].y = blocks[j+1].y;
+                        break;
+                    }
+                }
+            }
+
+        }
     }
     
     glutPostRedisplay();
 
     if (animation_ongoing)
         glutTimerFunc(TIMER_INTERVAL,on_timer,TIMER_ID);
+}
+
+int nth_block() {
+    
+    int br = 0;
+    
+    for (int j = n-1; j >= 0;j --)
+            if ((fabs(blocks[n].x - blocks[j].x) > 2.0))
+                br ++;
+            
+    return br;
 }
 
 void on_reshape(int width, int height) {
@@ -282,23 +338,27 @@ void on_display() {
     glPopMatrix();
     
 
-     
+    if (!end) {
+    
     glPushMatrix();
         moving_cubes(h, color);
     glPopMatrix();
+    }
     
+    if (end && n < 100)
+        draw_cube(blocks[n].x, blocks[n].y, blocks[n].color);
     
         
-        for (int j = 0;j < i;j ++) {
+    for (int j = 0;j < i;j ++) {
 
-        glPushMatrix();
-            draw_cube(blocks[j].x, blocks[j].y, blocks[j].color);
-        glPopMatrix();
-        
-         drop = 0;
+    glPushMatrix();
+        draw_cube(blocks[j].x, blocks[j].y, blocks[j].color);
+    glPopMatrix();
+    
+        drop = 0;
     }
 
-    
+
     
     glutSwapBuffers();
 }
