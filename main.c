@@ -20,7 +20,9 @@ struct Block {
     
     float y;
     float x;
-    float color;
+    float red;
+    float green;
+    float blue;
 
 };
 
@@ -36,7 +38,11 @@ float h = 0.4 - 3.0;
 //brojac blokova
 int i = 0;
 int lr = 1;
-float color = 0.2;
+float red = 0.1;
+float green = 0.7;
+float blue = 0.5;
+int colorFirst = 0;
+int colorSecond = 0;
 float cameraEye = 0.0;
 float cameraCenter = 0.0;
 
@@ -44,11 +50,11 @@ int n;
 int end = 0;
 
 void base_cube();
-void moving_cubes(float y, float color);
-void draw_cube(float x, float y, float color);
+void moving_cubes(float y, float red, float green, float blue);
+void draw_cube(float x, float y, float red, float green, float blue);
 int nth_block();
-
-
+void setColor();
+void reset();
 
 int main(int argc, char **argv){
     /* Inicijalizacija */
@@ -157,6 +163,10 @@ void on_keyboard(unsigned char key, int x, int y) {
                 glutTimerFunc(TIMER_INTERVAL, on_timer, TIMER_ID);
             }
             break;
+        case 'r': // restart animation
+        case 'R':
+            reset();
+            break;
         case 27:
           exit(0);
           break;
@@ -233,7 +243,9 @@ void on_timer(int id) {
             
             blocks[i].x = - lr*5*cos(animation_parameter/40.0);
             blocks[i].y = h - 0.1;
-            blocks[i].color = color;
+            blocks[i].red = red;
+            blocks[i].green = green;
+            blocks[i].blue = blue;
             
             if (fabs(blocks[i].x - blocks[i-1].x) > 2.0) {
                 end = 1;
@@ -248,11 +260,11 @@ void on_timer(int id) {
 
             lr *= -1;
             h += 0.3;
-            if (color >= 1.0)
-                color = 0.0;
-            color += 0.1;
             animation_parameter = 0;
             i ++;
+            setColor();
+            
+            
             if (i > 1) 
                 cameraCenter += 0.05;
             
@@ -295,6 +307,75 @@ void on_timer(int id) {
         glutTimerFunc(TIMER_INTERVAL,on_timer,TIMER_ID);
 }
 
+void setColor() {
+    
+    if (!colorSecond) {
+        
+            if (colorFirst == 0) {
+                blue += 0.1;
+            }
+            
+            if (blue >= 0.7 && colorFirst == 0)
+                colorFirst = 1;
+            
+            if (colorFirst == 1) {
+                green -= 0.1;
+            }
+            
+            if (green <= 0.0 && colorFirst == 1)
+                colorFirst = 2;
+            
+            if (colorFirst == 2) {
+                red += 0.1;
+            }
+            if (red >= 0.8 && colorFirst == 2) {
+                colorFirst = 3;
+                green = 0.1;
+            }
+            
+            if (colorFirst == 3) {
+                blue -= 0.1;
+            }
+            if (blue <= 0.2 && colorFirst == 3) {
+                colorSecond = 1;
+            }
+        }
+        else {
+            
+            if (colorSecond == 1)
+                blue += 0.1;
+            
+            if (blue >= 0.7 && colorSecond == 1) {
+                colorSecond = 2;
+                green = 0.0;
+            }
+            
+            if (colorSecond == 2)
+                red -= 0.1;
+            
+            if (red <= 0.1 && colorSecond == 2)
+                colorSecond = 3;
+            
+            if (colorSecond == 3)
+                green += 0.1;
+            
+            if (green >= 0.7 && colorSecond == 3)
+                colorSecond = 4;
+            
+            if (colorSecond == 4)
+                blue -= 0.1;
+            
+            if (blue <= 0.4 && colorSecond == 4) {
+                colorSecond = 0;
+                colorFirst = 0;
+                red = 0.1;
+                green = 0.7;
+                blue = 0.5;
+            }
+        }
+    
+}
+
 int nth_block() {
     
     int br = 0;
@@ -317,17 +398,17 @@ void on_reshape(int width, int height) {
 
 void base_cube() {
     
-    glColor3f(0.8, 0.2, 0.2);
+    glColor3f(0.1, 0.7, 0.4);
     glTranslatef(- 0.8, -3.0, 0);
     glScalef(2, 0.3, 2);
     glutSolidCube(1);
 }
 
-void moving_cubes(float y, float color) {
+void moving_cubes(float y, float red, float green, float blue) {
     
             
         glPushMatrix();
-            glColor3f(0.6, color, 0.2);
+            glColor3f(red, green, blue);
             glTranslatef(-0.8 - lr*5*cos(animation_parameter/40.0), y, 0);
             glScalef(2, 0.3, 2);
             glutSolidCube(1);
@@ -336,10 +417,10 @@ void moving_cubes(float y, float color) {
 
 }
 
-void draw_cube(float x, float y, float color) {
+void draw_cube(float x, float y, float red, float green, float blue) {
     
     glPushMatrix();
-        glColor3f(0.6, color, 0.2);
+        glColor3f(red, green, blue);
         glTranslatef(x-0.8, y, 0);
         glScalef(2, 0.3, 2);
         glutSolidCube(1);
@@ -410,18 +491,18 @@ void on_display() {
     if (!end) {
     
     glPushMatrix();
-        moving_cubes(h, color);
+        moving_cubes(h, red, green, blue);
     glPopMatrix();
     }
     
     if (end && n < 100)
-        draw_cube(blocks[n].x, blocks[n].y, blocks[n].color);
+       draw_cube(blocks[n].x, blocks[n].y, blocks[n].red, blocks[n].green, blocks[n].blue);
     
         
     for (int j = 0;j < i;j ++) {
 
     glPushMatrix();
-        draw_cube(blocks[j].x, blocks[j].y, blocks[j].color);
+       draw_cube(blocks[j].x, blocks[j].y, blocks[j].red, blocks[j].green, blocks[j].blue);
     glPopMatrix();
     
         drop = 0;
@@ -432,3 +513,30 @@ void on_display() {
     glutSwapBuffers();
 }
     
+void reset() {
+    
+    animation_ongoing = 0;
+    animation_parameter = 0;
+    drop = 0;
+    h = 0.4 - 3.0;
+    lr = 1;
+    cameraCenter = 0;
+    cameraEye = 0;
+    end = 0;
+    
+    for (int j = 0;j < 100;j ++) {
+        blocks[j].x = 0.0;
+        blocks[j].y = 0.0;
+        blocks[j].red = 0.0;
+        blocks[j].green = 0.0;
+        blocks[j].blue = 0.0;
+    }
+    
+    i = 0;
+    red = 0.1;
+    green = 0.7;
+    blue = 0.5;
+    colorFirst = 0;
+    colorSecond = 0;
+    n = 500;
+}
