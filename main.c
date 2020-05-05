@@ -7,14 +7,18 @@
 
 #define TIMER_INTERVAL 20
 #define TIMER_ID 0
-#define FILENAME0 "pozadina.bmp"
+#define FILENAME0 "slike/pozadina.bmp"
+#define FILENAME1 "slike/start.bmp"
+#define FILENAME2 "slike/gameOver.bmp"
+#define FILENAME3 "slike/win.bmp"
 
-static GLuint texture[1];
+static GLuint texture[4];
 
 static void on_display();
 static void on_reshape(int width, int height);
 static void on_keyboard(unsigned char key, int x, int y);
 static void on_timer(int id);
+static void initTexture();
 
 struct Block {
     
@@ -48,6 +52,9 @@ float cameraCenter = 0.0;
 
 int n;
 int end = 0;
+int start = 1;
+int gameOver = 0;
+int win = 0;
 
 void base_cube();
 void moving_cubes(float y, float red, float green, float blue);
@@ -74,36 +81,7 @@ int main(int argc, char **argv){
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
     
-    
-    Image * image;
-        /* Ukljucuju se teksture. */
-    glEnable(GL_TEXTURE_2D);
-
-    glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
-
-    /*Inicijalizuje se objekat*/
-    image = image_init(0, 0);
-
-    /* Kreira se tekstura. */
-    image_read(image, FILENAME0);
-
-    /* Generisu se identifikatori tekstura. */
-    glGenTextures(1, texture);
-
-    glBindTexture(GL_TEXTURE_2D, texture[0]);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,  GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,  GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,image->width, image->height, 0,GL_RGB, GL_UNSIGNED_BYTE,image->pixels);
-    
-    /* Iskljucuje se tekstura */
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    /* Unistava se objekat*/
-    image_done(image);
-    
-    
+    initTexture();
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -127,6 +105,65 @@ int main(int argc, char **argv){
 
     return 0;
 }
+
+static void initTexture() {
+    
+    Image * image;
+        /* Ukljucuju se teksture. */
+    glEnable(GL_TEXTURE_2D);
+
+    glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
+
+    /*Inicijalizuje se objekat*/
+    image = image_init(0, 0);
+
+    /* Kreira se tekstura. */
+    image_read(image, FILENAME0);
+
+    /* Generisu se identifikatori tekstura. */
+    glGenTextures(4, texture);
+
+    glBindTexture(GL_TEXTURE_2D, texture[0]);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,  GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,  GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,image->width, image->height, 0,GL_RGB, GL_UNSIGNED_BYTE,image->pixels);
+    
+    image_read(image, FILENAME1);
+    
+    glBindTexture(GL_TEXTURE_2D, texture[1]);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,  GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,  GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,image->width, image->height, 0,GL_RGB, GL_UNSIGNED_BYTE,image->pixels);
+    
+    image_read(image, FILENAME2);
+    
+    glBindTexture(GL_TEXTURE_2D, texture[2]);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,  GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,  GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,image->width, image->height, 0,GL_RGB, GL_UNSIGNED_BYTE,image->pixels);
+    
+    image_read(image, FILENAME3);
+    
+    glBindTexture(GL_TEXTURE_2D, texture[3]);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,  GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,  GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,image->width, image->height, 0,GL_RGB, GL_UNSIGNED_BYTE,image->pixels);
+
+    /* Iskljucuje se tekstura */
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    /* Unistava se objekat*/
+    image_done(image);
+}
+
 
 /* Koordinatni sistem */
 void draw_axes(float len) {
@@ -158,6 +195,7 @@ void on_keyboard(unsigned char key, int x, int y) {
             break;
         case 's': // start animation
         case 'S':
+            start = 0;
             if (!animation_ongoing) {
                 animation_ongoing = 1;
                 glutTimerFunc(TIMER_INTERVAL, on_timer, TIMER_ID);
@@ -272,19 +310,19 @@ void on_timer(int id) {
     }
     else {
         
-        
+        float f = blocks[n].y;
         
         if (n < 100) {
         
             
-        if (nth_block() == n && (fabs(blocks[n].x) > 2.0)) {
-                if (blocks[n].y >= - 3.0) 
-                    blocks[n].y -= 0.1;
-            }
-            else if (nth_block() == n && !(fabs(blocks[n].x) > 2.0)) {
-                if (blocks[n].y >=  -2.6) 
-                    blocks[n].y -= 0.1;
-            }
+            if (nth_block() == n && (fabs(blocks[n].x) > 2.0)) {
+                    if (blocks[n].y >= - 3.0) 
+                        blocks[n].y -= 0.1;
+                }
+                else if (nth_block() == n && !(fabs(blocks[n].x) > 2.0)) {
+                    if (blocks[n].y >=  -2.6) 
+                        blocks[n].y -= 0.1;
+                }
             else {
                 
                 for (int j = n-1; j >= 0;j --) {
@@ -298,6 +336,13 @@ void on_timer(int id) {
                 }
             }
 
+        }
+        
+        if (f == blocks[n].y) {
+            if (n == 100)
+                win = 1;
+            else
+                gameOver = 1;
         }
     }
     
@@ -438,77 +483,165 @@ void on_display() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     
+    if (start) {
+         
+        gluLookAt(0, 0, 5,
+                  0, 0 , 0,
+                  0, 1, 0);
     
-    gluLookAt(0, 0, 16,
-              0, 0 , 0,
-              0, 1, 0);
+    
+        glBindTexture(GL_TEXTURE_2D, texture[1]);
         
+        glBegin(GL_QUADS);
         
-    glBindTexture(GL_TEXTURE_2D, texture[0]);
-    
-    glBegin(GL_QUADS);
-    
-        glNormal3f(0, 0, 1);
+            glNormal3f(0, 0, 1);
 
-        glTexCoord2f(0, 0);
-        glVertex3f(-9.15, -9.15,- 6);
+            glTexCoord2f(0, 0);
+            glVertex3f(-3.45, -3.45,- 3);
 
-        glTexCoord2f(1, 0);
-        glVertex3f(9.15, -9.15, -6);
+            glTexCoord2f(1, 0);
+            glVertex3f(3.45, -3.45, -3);
 
-        glTexCoord2f(1, 1);
-        glVertex3f(9.15, 9.15, -6);
+            glTexCoord2f(1, 1);
+            glVertex3f(3.45, 3.45, -3);
 
-        glTexCoord2f(0, 1);
-        glVertex3f(-9.15, 9.15, -6);
-    
-    glEnd();
+            glTexCoord2f(0, 1);
+            glVertex3f(-3.45, 3.45, -3);
+        
+        glEnd();
         
     
-    glBindTexture(GL_TEXTURE_2D, 0);
-    
-    
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    
-    
-
-    // 7 10 10
-    //2 5 10
-    gluLookAt(7, 5 + cameraEye/20.0, 10,
-              0, 0 + cameraCenter, 0,
-              0, 1, 0);
-    
-
-
-//       draw_axes(5);
-
-    glPushMatrix();
-        base_cube();
-    glPopMatrix();
-    
-
-    if (!end) {
-    
-    glPushMatrix();
-        moving_cubes(h, red, green, blue);
-    glPopMatrix();
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
+    else if (win) {
+        gluLookAt(0, 0, 5,
+                  0, 0 , 0,
+                  0, 1, 0);
     
-    if (end && n < 100)
-       draw_cube(blocks[n].x, blocks[n].y, blocks[n].red, blocks[n].green, blocks[n].blue);
     
+        glBindTexture(GL_TEXTURE_2D, texture[3]);
         
-    for (int j = 0;j < i;j ++) {
+        glBegin(GL_QUADS);
+        
+            glNormal3f(0, 0, 1);
 
-    glPushMatrix();
-       draw_cube(blocks[j].x, blocks[j].y, blocks[j].red, blocks[j].green, blocks[j].blue);
-    glPopMatrix();
-    
-        drop = 0;
+            glTexCoord2f(0, 0);
+            glVertex3f(-3.45, -3.45,- 3);
+
+            glTexCoord2f(1, 0);
+            glVertex3f(3.45, -3.45, -3);
+
+            glTexCoord2f(1, 1);
+            glVertex3f(3.45, 3.45, -3);
+
+            glTexCoord2f(0, 1);
+            glVertex3f(-3.45, 3.45, -3);
+        glEnd();
+            
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
+    else if (gameOver) {
+            
+        gluLookAt(0, 0, 5,
+                  0, 0 , 0,
+                  0, 1, 0);
+    
+    
+        glBindTexture(GL_TEXTURE_2D, texture[2]);
+        
+        glBegin(GL_QUADS);
+        
+            glNormal3f(0, 0, 1);
+
+            glTexCoord2f(0, 0);
+            glVertex3f(-3.45, -3.45,- 3);
+
+            glTexCoord2f(1, 0);
+            glVertex3f(3.45, -3.45, -3);
+
+            glTexCoord2f(1, 1);
+            glVertex3f(3.45, 3.45, -3);
+
+            glTexCoord2f(0, 1);
+            glVertex3f(-3.45, 3.45, -3);
+        
+        glEnd();
+            
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+    }
+    else {
+    
+        gluLookAt(0, 0, 16,
+                  0, 0 , 0,
+                  0, 1, 0);
+            
+            
+        glBindTexture(GL_TEXTURE_2D, texture[0]);
+        
+        glBegin(GL_QUADS);
+        
+            glNormal3f(0, 0, 1);
+
+            glTexCoord2f(0, 0);
+            glVertex3f(-9.15, -9.15,- 6);
+
+            glTexCoord2f(1, 0);
+            glVertex3f(9.15, -9.15, -6);
+
+            glTexCoord2f(1, 1);
+            glVertex3f(9.15, 9.15, -6);
+
+            glTexCoord2f(0, 1);
+            glVertex3f(-9.15, 9.15, -6);
+        
+        glEnd();
+            
+        
+        glBindTexture(GL_TEXTURE_2D, 0);
+        
+        
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        
+        
+
+        // 7 10 10
+        //2 5 10
+        gluLookAt(7, 5 + cameraEye/20.0, 10,
+                0, 0 + cameraCenter, 0,
+                0, 1, 0);
+        
 
 
+    //       draw_axes(5);
+
+        glPushMatrix();
+            base_cube();
+        glPopMatrix();
+        
+
+        if (!end) {
+        
+        glPushMatrix();
+            moving_cubes(h, red, green, blue);
+        glPopMatrix();
+        }
+        
+        if (end && n < 100)
+        draw_cube(blocks[n].x, blocks[n].y, blocks[n].red, blocks[n].green, blocks[n].blue);
+        
+            
+        for (int j = 0;j < i;j ++) {
+
+        glPushMatrix();
+        draw_cube(blocks[j].x, blocks[j].y, blocks[j].red, blocks[j].green, blocks[j].blue);
+        glPopMatrix();
+        
+            drop = 0;
+        }
+
+    }
     
     glutSwapBuffers();
 }
@@ -539,4 +672,7 @@ void reset() {
     colorFirst = 0;
     colorSecond = 0;
     n = 500;
+    gameOver = 0;
+    start = 1;
+    win = 0;
 }
