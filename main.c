@@ -3,6 +3,7 @@
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
+#include <string.h>
 #include "image.h"
 
 #define TIMER_INTERVAL 20
@@ -62,6 +63,7 @@ void draw_cube(float x, float y, float red, float green, float blue);
 int nth_block();
 void setColor();
 void reset();
+void drawScore();
 
 int main(int argc, char **argv){
     /* Inicijalizacija */
@@ -339,10 +341,18 @@ void on_timer(int id) {
         }
         
         if (f == blocks[n].y) {
-            if (n == 100)
-                win = 1;
-            else
-                gameOver = 1;
+            
+            if ( animation_parameter < 100)
+                    animation_parameter ++;
+                   
+            else {
+                if (n == 100)
+                    win = 1;
+                        
+                else
+                    gameOver = 1;
+                        
+            }
         }
     }
     
@@ -640,7 +650,9 @@ void on_display() {
         
             drop = 0;
         }
-
+        
+        if(end && animation_parameter)
+                drawScore();
     }
     
     glutSwapBuffers();
@@ -676,3 +688,40 @@ void reset() {
     start = 1;
     win = 0;
 }
+
+void drawScore() {
+    
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+  
+    gluLookAt(0, 0, -9,
+              0, 0, 0,
+              0, 1, 0);
+
+    char s[15];
+    int len = 0;
+    
+    if (n == 100)
+        sprintf(s, "SCORE : %d", i);
+    else
+        sprintf(s, "SCORE : %d", i-1);
+    len = strlen(s);
+    
+    glColor3f(0.7, 0.7, 0.7);
+    glRasterPos2f(3.3, -3.45);
+
+    for (int j = 0;j < len;j ++) 
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, s[j]);
+    
+    
+    glColor3f(1.0, 1.0, 1.0);
+    glBegin(GL_QUADS);
+        
+        glVertex2f(2.0, -3.2);
+        glVertex2f(3.6, -3.2);
+        glVertex2f(3.6, -3.6);
+        glVertex2f(2.0, -3.6);
+        
+    glEnd();
+}    
+
