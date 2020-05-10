@@ -50,7 +50,7 @@ int colorFirst = 0;
 int colorSecond = 0;
 float cameraEye = 0.0;
 float cameraCenter = 0.0;
-
+float eyeX = 7;
 int n;
 int end = 0;
 int start = 1;
@@ -318,13 +318,13 @@ void on_timer(int id) {
         
             
             if (nth_block() == n && (fabs(blocks[n].x) > 2.0)) {
-                    if (blocks[n].y >= - 3.0) 
-                        blocks[n].y -= 0.1;
-                }
-                else if (nth_block() == n && !(fabs(blocks[n].x) > 2.0)) {
-                    if (blocks[n].y >=  -2.6) 
-                        blocks[n].y -= 0.1;
-                }
+                if (blocks[n].y >= - 3.0) 
+                    blocks[n].y -= 0.1;
+            }
+            else if (nth_block() == n && !(fabs(blocks[n].x) > 2.0)) {
+                if (blocks[n].y >=  -2.6) 
+                    blocks[n].y -= 0.1;
+            }
             else {
                 
                 for (int j = n-1; j >= 0;j --) {
@@ -342,17 +342,52 @@ void on_timer(int id) {
         
         if (f == blocks[n].y) {
             
-            if ( animation_parameter < 100)
-                    animation_parameter ++;
-                   
-            else {
-                if (n == 100)
-                    win = 1;
+            if (!animation_parameter) {
+            
+                    if (eyeX > 2.0) {
+                            eyeX -= 0.05;
+                            if (i <= 40)
+                                cameraEye -= 1.0;
+                            else
+                                cameraEye -= 0.6;
+                    }
+                    
+                    else {
+                            
+                            
+                        cameraCenter -= 0.05;
+                        if (i <= 40)
+                            cameraEye -= 0.6;
+                        else
+                            cameraEye -= 1.0;
                         
-                else
-                    gameOver = 1;
+   
+                        if (i <= 45 && cameraCenter <= 0.0) {
+                            animation_parameter = 1;
+                            
+                        }
+                        else if (i > 45 && cameraCenter <= 0.6){
+                            animation_parameter = 1;
+                            
+                        }
+                    
+                    }
+               }
+               else {
+
+                    if ( animation_parameter < 100)
+                            animation_parameter ++;
                         
-            }
+                    else {
+                        
+                        if (n == 100)
+                            win = 1;
+                                
+                        else
+                            gameOver = 1;
+                                
+                    }
+               }
         }
     }
     
@@ -618,7 +653,7 @@ void on_display() {
 
         // 7 10 10
         //2 5 10
-        gluLookAt(7, 5 + cameraEye/20.0, 10,
+        gluLookAt(eyeX, 5 + cameraEye/20.0, 10,
                 0, 0 + cameraCenter, 0,
                 0, 1, 0);
         
@@ -633,20 +668,20 @@ void on_display() {
 
         if (!end) {
         
-        glPushMatrix();
-            moving_cubes(h, red, green, blue);
-        glPopMatrix();
+            glPushMatrix();
+                moving_cubes(h, red, green, blue);
+            glPopMatrix();
         }
         
         if (end && n < 100)
-        draw_cube(blocks[n].x, blocks[n].y, blocks[n].red, blocks[n].green, blocks[n].blue);
+            draw_cube(blocks[n].x, blocks[n].y, blocks[n].red, blocks[n].green, blocks[n].blue);
         
             
         for (int j = 0;j < i;j ++) {
 
-        glPushMatrix();
-        draw_cube(blocks[j].x, blocks[j].y, blocks[j].red, blocks[j].green, blocks[j].blue);
-        glPopMatrix();
+            glPushMatrix();
+            draw_cube(blocks[j].x, blocks[j].y, blocks[j].red, blocks[j].green, blocks[j].blue);
+            glPopMatrix();
         
             drop = 0;
         }
@@ -687,6 +722,7 @@ void reset() {
     gameOver = 0;
     start = 1;
     win = 0;
+    eyeX = 7;
 }
 
 void drawScore() {
