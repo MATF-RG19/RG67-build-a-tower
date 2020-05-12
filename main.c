@@ -51,7 +51,9 @@ int colorSecond = 0;
 float cameraEye = 0.0;
 float cameraCenter = 0.0;
 float eyeX = 7;
+int fall = 1;
 int n;
+int k;
 int end = 0;
 int start = 1;
 int gameOver = 0;
@@ -226,7 +228,7 @@ void on_timer(int id) {
                 pom = 0.002;
             }
             else if (i >= 5 && i <= 10) {
-                animation_parameter += 1.5;
+                animation_parameter += 1.4;
                 pom = 0.003;
             }
             else if (i >= 11 && i < 20) {
@@ -290,6 +292,7 @@ void on_timer(int id) {
             if (fabs(blocks[i].x - blocks[i-1].x) > 2.0) {
                 end = 1;
                 n = i;
+                k = n - 1;
                 drop = 0;
             }
             else if (i == 99 && !(fabs(blocks[i].x - blocks[i-1].x) > 2.0)) {
@@ -312,35 +315,36 @@ void on_timer(int id) {
     }
     else {
         
-        float f = blocks[n].y;
-        
-        if (n < 100) {
-        
+        if (n < 100 && fall) {
             
-            if (nth_block() == n && (fabs(blocks[n].x) > 2.0)) {
-                if (blocks[n].y >= - 3.0) 
-                    blocks[n].y -= 0.1;
-            }
-            else if (nth_block() == n && !(fabs(blocks[n].x) > 2.0)) {
-                if (blocks[n].y >=  -2.6) 
-                    blocks[n].y -= 0.1;
+            if (k == -1) {
+            
+                if ((fabs(blocks[n].x) > 2.0)) {
+                        blocks[n].y = -3.0;
+                        fall = 0;
+                }
+                else {
+                    blocks[n].y = blocks[0].y;
+                    fall = 0;
+                }
             }
             else {
-                
-                for (int j = n-1; j >= 0;j --) {
-                    
-                    if ((fabs(blocks[n].x - blocks[j].x) > 2.0))
-                        blocks[n].y -= 0.1;
-                    else {
-                        blocks[n].y = blocks[j+1].y;
-                        break;
-                    }
+            
+                if ((fabs(blocks[n].x - blocks[k].x) > 2.0))
+                            blocks[n].y -= 0.1;
+                else {
+                    blocks[n].y = blocks[k+1].y;
+                    fall = 0;
                 }
+                
+                
+                if (blocks[n].y <= blocks[k+1].y)
+                    k --;
             }
 
         }
         
-        if (f == blocks[n].y) {
+        if (!fall) {
             
             if (!animation_parameter) {
             
@@ -466,16 +470,6 @@ void setColor() {
     
 }
 
-int nth_block() {
-    
-    int br = 0;
-    
-    for (int j = n-1; j >= 0;j --)
-            if ((fabs(blocks[n].x - blocks[j].x) > 2.0))
-                br ++;
-            
-    return br;
-}
 
 void on_reshape(int width, int height) {
     glViewport(0, 0, width, height);
@@ -723,6 +717,7 @@ void reset() {
     start = 1;
     win = 0;
     eyeX = 7;
+    fall = 1;
 }
 
 void drawScore() {
