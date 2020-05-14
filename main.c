@@ -13,14 +13,8 @@
 #define FILENAME2 "slike/gameOver.bmp"
 #define FILENAME3 "slike/win.bmp"
 
-static GLuint texture[4];
 
-static void on_display();
-static void on_reshape(int width, int height);
-static void on_keyboard(unsigned char key, int x, int y);
-static void on_timer(int id);
-static void initTexture();
-
+//struktura koja cuva x, y koordinate i rgb bloka
 struct Block {
     
     float y;
@@ -31,62 +25,110 @@ struct Block {
 
 };
 
+/* PROMENLJIVE */
+
+// identifikatori tekstura
+static GLuint texture[4];
+
+// niz blokova
 struct Block blocks[100];
 
-
+// promenljive za timer funkciju
 float animation_ongoing = 0;
 float animation_parameter = 0.0;
+
 //indikator za spustanje bloka
 int drop = 0;
 //visina bloka
 float h = 0.4 - 3.0;
 //brojac blokova
 int i = 0;
-int lr = 1;
+//indikator da li blok dolazi sleva ili zdesna
+int leftRight = 1;
+
+//parametri za pomeranje kamere, cameraEye - EyeY cameraCenter - CenterY u gluLookAt funkciji
+float cameraEye = 0.0;
+float cameraCenter = 0.0;
+
+// pocetna vrednost za koju pomeramo eyex na kraju kada prikazujemo celu kulu
+float eyeX = 7;
+
+//rgb za naredni blok
 float red = 0.1;
 float green = 0.7;
 float blue = 0.5;
+//odredjuju smer u kome se boje blokova menjaju
 int colorFirst = 0;
 int colorSecond = 0;
-float cameraEye = 0.0;
-float cameraCenter = 0.0;
-float eyeX = 7;
-int fall = 1;
-int n;
-int k;
+
+
+// indikator za kraj igre
 int end = 0;
+// indikator za startni prozor
 int start = 1;
+// indikator za gameOver prozor
 int gameOver = 0;
+// indikator za win prozor
 int win = 0;
 
-void base_cube();
-void moving_cubes(float y, float red, float green, float blue);
-void draw_cube(float x, float y, float red, float green, float blue);
-int nth_block();
-void setColor();
+// indikator za spustanje poslednjeg bloka
+int fall = 1;
+// promenjiva u kojoj cemo cuvati indeks poslednjeg bloka
+int n;
+int k;
+
+/* FUNKCIJE */
+
+static void on_display();
+static void on_reshape(int width, int height);
+static void on_keyboard(unsigned char key, int x, int y);
+static void on_timer(int id);
+// Inicijalizacija teksture
+static void initTexture();
+// vraca promenljive na pocetno stanje
 void reset();
+// crta pocetni blok na koji treba da slazemo ostale
+void base_cube();
+// crta blok dok se pomera
+void moving_cubes(float y, float red, float green, float blue);
+// crta vec postavljene blokove
+void draw_cube(float x, float y, float red, float green, float blue);
+// postavlja boju sledeceg bloka
+void setColor();
+// ispisuje rezultat - broj postavljenih blokova
 void drawScore();
 
-int main(int argc, char **argv){
-    /* Inicijalizacija */
 
-    
+
+int main(int argc, char **argv){
+   
+    // inicijalizuje se glut 
+
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
 
+    // kreira se prozor
+    
     glutInitWindowSize(800, 800);
     glutInitWindowPosition(100, 100);
     glutCreateWindow(argv[0]);
 
+    // callback funkcije
+    
     glutDisplayFunc(on_display);
     glutReshapeFunc(on_reshape);
     glutKeyboardFunc(on_keyboard);
 
+    glClearColor(0.7, 0.7, 0.7, 0);
+    
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
-    
-    initTexture();
 
+    // inicijalizuju se teksture
+    initTexture();
+    
+    // postavlja se osvetljenje
+    
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_COLOR_MATERIAL);
@@ -100,11 +142,7 @@ int main(int argc, char **argv){
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
-
-
-
-
-    glClearColor(0.7, 0.7, 0.7, 0);
+    
     glutMainLoop();
 
     return 0;
@@ -112,8 +150,9 @@ int main(int argc, char **argv){
 
 static void initTexture() {
     
+    /*Inicijalizuje se objekat*/
     Image * image;
-        /* Ukljucuju se teksture. */
+    /* Ukljucuju se teksture. */
     glEnable(GL_TEXTURE_2D);
 
     glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
@@ -169,28 +208,6 @@ static void initTexture() {
 }
 
 
-/* Koordinatni sistem */
-void draw_axes(float len) {
-    glDisable(GL_LIGHTING);
-
-    glBegin(GL_LINES);
-        glColor3f(1,0,0);
-        glVertex3f(0,0,0);
-        glVertex3f(len,0,0);
-
-        glColor3f(0,1,0);
-        glVertex3f(0,0,0);
-        glVertex3f(0,len,0);
-
-        glColor3f(0,0,1);
-        glVertex3f(0,0,0);
-        glVertex3f(0,0,len);
-    glEnd();
-
-    glEnable(GL_LIGHTING);
-}
-
-
 void on_keyboard(unsigned char key, int x, int y) {
     switch(key) {
         case 'd': // drop block 
@@ -209,111 +226,155 @@ void on_keyboard(unsigned char key, int x, int y) {
         case 'R':
             reset();
             break;
-        case 27:
+        case 27: // quit
           exit(0);
           break;
     }
 }
 
 void on_timer(int id) {
+    
     if (id != TIMER_ID) 
         return;
         
+    
     if (!end) {
     
+        // pomocni parametar za uvecavanje cameraCenter i cameraEye
         float pom;
+    
+        // uvecavamo animation_parameter, cameraCenter i cameraEye
+        // sto vise blokova ima to brze treba da se krecu
         
         if (i < 5) {
-                animation_parameter ++;
-                pom = 0.002;
-            }
-            else if (i >= 5 && i <= 10) {
-                animation_parameter += 1.4;
-                pom = 0.003;
-            }
-            else if (i >= 11 && i < 20) {
-                animation_parameter += 1.8;
-                pom = 0.005;
-            }
-            else if (i >= 20 && i < 30){
-                animation_parameter += 2.2;
-                pom = 0.007;
-            }
-            else if (i >= 30 && i < 40){
-                animation_parameter += 2.6;
-                pom = 0.009;
-            }
-            else if (i >= 40 && i < 50) {
-                animation_parameter += 3.0;
-                pom = 0.011;
-            }
-            else if (i >= 50 && i <= 60){
-                animation_parameter += 3.5;
-                pom = 0.014;
-            }
-            else if (i >= 60 && i <= 70){
-                animation_parameter += 3.9;
-                pom = 0.016;
-            }
-            else if (i >= 70 && i <= 80){
-                animation_parameter += 4.3;
-                pom = 0.019;
-            }
-            else if (i >= 80 && i <= 90){
-                animation_parameter += 4.5;
-                pom = 0.022;
-            }
-            else {
-                animation_parameter += 4.7;
-                pom = 0.024;
-            }
-            
-            if (i > 10 && i <= 40 && animation_parameter < 100) {
-                cameraEye += 0.2;
-                cameraEye += pom;
-            }
-            
-            if (i > 40 && animation_parameter < 100) {
-                cameraEye += 0.3;
-                cameraEye += pom;
-            }
-    
-            if (animation_parameter < 100)
-                cameraCenter += pom;
+            animation_parameter ++;
+            pom = 0.002;
+        }
+        else if (i >= 5 && i <= 10) {
+            animation_parameter += 1.4;
+            pom = 0.003;
+        }
+        else if (i >= 11 && i < 20) {
+            animation_parameter += 1.8;
+            pom = 0.005;
+        }
+        else if (i >= 20 && i < 30){
+            animation_parameter += 2.2;
+            pom = 0.007;
+        }
+        else if (i >= 30 && i < 40){
+            animation_parameter += 2.6;
+            pom = 0.009;
+        }
+        else if (i >= 40 && i < 50) {
+            animation_parameter += 3.0;
+            pom = 0.011;
+        }
+        else if (i >= 50 && i <= 60){
+            animation_parameter += 3.5;
+            pom = 0.014;
+        }
+        else if (i >= 60 && i <= 70){
+            animation_parameter += 3.9;
+            pom = 0.016;
+        }
+        else if (i >= 70 && i <= 80){
+            animation_parameter += 4.3;
+            pom = 0.019;
+        }
+        else if (i >= 80 && i <= 90){
+            animation_parameter += 4.5;
+            pom = 0.022;
+        }
+        else {
+            animation_parameter += 4.7;
+            pom = 0.023;
+        }
         
+        if (i > 10 && i <= 40 && animation_parameter < 100) {
+            cameraEye += 0.2;
+            cameraEye += pom;
+        }
+        
+        if (i > 40 && i < 90 && animation_parameter < 100) {
+            cameraEye += 0.3;
+            cameraEye += pom;
+        }
+        if (i >= 90 && animation_parameter < 100) {
+            cameraEye += 0.5;
+            cameraEye += pom;
+        }
+   
+        if (animation_parameter < 100)
+            cameraCenter += pom;
+
+
+        
+        // kada pritisnemo d zapisujemo i-ti blok u niz blocks
         if (drop) {
             
-            blocks[i].x = - lr*5*cos(animation_parameter/40.0);
+            blocks[i].x = - leftRight*5*cos(animation_parameter/40.0);
             blocks[i].y = h - 0.1;
             blocks[i].red = red;
             blocks[i].green = green;
             blocks[i].blue = blue;
             
+            
+            // ako se ne poklapa sa prethodnim zavrsili smo igricu
             if (fabs(blocks[i].x - blocks[i-1].x) > 2.0) {
-                end = 1;
+                //pamtimo koji blok je bio poslednji kako bismo ga spustili kasnije
                 n = i;
                 k = n - 1;
-                drop = 0;
-            }
-            else if (i == 99 && !(fabs(blocks[i].x - blocks[i-1].x) > 2.0)) {
+                // zavrsio se prvi deo
                 end = 1;
+                    
+                }
+            // ako je i = 99 znaci da smo na stotom bloku 
+            //i ako smo ga pravilno spustili pobedili smo    
+            else if (i == 99 && !(fabs(blocks[i].x - blocks[i-1].x) > 2.0)) {
+                // postavljamo n na 100 da znamo da smo pobedili
                 n = 100;
-                drop = 0;
+                // zavrsio se prvi deo
+                end = 1;
+                // pobedili smo pa fall postavljamo na 0
+                // jer je poslenji blok vec na svom mestu
+                fall = 0;
             }
-
-            lr *= -1;
-            h += 0.3;
-            animation_parameter = 0;
-            i ++;
-            setColor();
+            //postavljamo parametre za sledeci blok
+            
+                //uvecavamo broj blokova
+                i ++;
+            
+                // menjamo stranu sa koje dolazi sledeci blok
+                leftRight *= -1;
+                // uvecavamo visinu sledeceg bloka
+                h += 0.3;
+                // vracamo animation_parameter na pocetnu vrednost
+                animation_parameter = 0;
+                
+                //postavljamo boju sledeceg bloka  
+                setColor();
+                
+                // pomeramo cameraCenter svaki put kada spustimo blok
+                if (i > 1) 
+                    cameraCenter += 0.05;
             
             
-            if (i > 1) 
-                cameraCenter += 0.05;
             
         }
+    
     }
+    
+    //drugi deo, kada korisnik zavrsi sa igricom (end = 1)
+    
     else {
+ 
+        // ako nismo pobedili tj. n je < 100
+        // spustamo n-ti (poslednji) blok koji se nije poklopio sa prethodnim
+        // treba da nalegne na prvi blok sa kojim se poklapa
+        // ili da padne do kraja ako se ne poklapa ni sa jednim 
+        // kada ga smestimo na odgovarajucu poziciju fall postavljamo na 0
+        
         
         if (n < 100 && fall) {
             
@@ -344,10 +405,15 @@ void on_timer(int id) {
 
         }
         
-        if (!fall) {
-            
-            if (!animation_parameter) {
-            
+        
+        // kada je n-ti blok pao na svoje mesto 
+        // pomeramo kameru ka dole kako bismo videli celu kulu
+
+           if (!fall) {
+               
+               if (!animation_parameter) {
+               
+                    //prvo pomeramo xEye i yEye gluLookAt funkcije dok xEye ne dodje do 2
                     if (eyeX > 2.0) {
                             eyeX -= 0.05;
                             if (i <= 40)
@@ -356,6 +422,7 @@ void on_timer(int id) {
                                 cameraEye -= 0.6;
                     }
                     
+                    // pomeramo kameru dole dok ne stignemo do kraja
                     else {
                             
                             
@@ -365,12 +432,13 @@ void on_timer(int id) {
                         else
                             cameraEye -= 1.0;
                         
-   
-                        if (i <= 45 && cameraCenter <= 0.0) {
+                        //kada dodjemo do podloge kule stajemo
+
+                        if (i <= 15 && cameraCenter <= 0.2) {
                             animation_parameter = 1;
                             
                         }
-                        else if (i > 45 && cameraCenter <= 0.6){
+                        else if (i > 15 && cameraCenter <= 0.6){
                             animation_parameter = 1;
                             
                         }
@@ -378,21 +446,24 @@ void on_timer(int id) {
                     }
                }
                else {
-
-                    if ( animation_parameter < 100)
-                            animation_parameter ++;
-                        
+                   
+                   // zadrzavamo se na kraju na kratko da bismo videli score
+                   if ( animation_parameter < 200)
+                        animation_parameter ++;
+                   // prelazimo na naredni prozor
                     else {
-                        
+                        // ako smo pobedili n je 100
+                        // i prikazujemo win prozor
                         if (n == 100)
                             win = 1;
-                                
+                        // inace smo izgubili
+                        // i pokazujemo gameOver prozor
                         else
                             gameOver = 1;
-                                
                     }
-               }
+                }
         }
+
     }
     
     glutPostRedisplay();
@@ -400,6 +471,7 @@ void on_timer(int id) {
     if (animation_ongoing)
         glutTimerFunc(TIMER_INTERVAL,on_timer,TIMER_ID);
 }
+
 
 void setColor() {
     
@@ -472,6 +544,7 @@ void setColor() {
 
 
 void on_reshape(int width, int height) {
+    
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -491,27 +564,26 @@ void base_cube() {
 void moving_cubes(float y, float red, float green, float blue) {
     
             
-        glPushMatrix();
-            glColor3f(red, green, blue);
-            glTranslatef(-0.8 - lr*5*cos(animation_parameter/40.0), y, 0);
-            glScalef(2, 0.3, 2);
-            glutSolidCube(1);
-        glPopMatrix();
+    glPushMatrix();
+        glColor3f(red, green, blue);
+        glTranslatef(- 0.8 - leftRight*5*cos(animation_parameter/40.0), y, 0);
+        glScalef(2, 0.3, 2);
+        glutSolidCube(1);
+    glPopMatrix();
         
 
 }
+
 
 void draw_cube(float x, float y, float red, float green, float blue) {
     
     glPushMatrix();
         glColor3f(red, green, blue);
-        glTranslatef(x-0.8, y, 0);
+        glTranslatef(x- 0.8, y, 0);
         glScalef(2, 0.3, 2);
         glutSolidCube(1);
     glPopMatrix();
 }
-
-
 
 
 
@@ -522,8 +594,12 @@ void on_display() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     
+    
+    // pocetni prozor koji stoji dok  ne pritisnemo 's'
     if (start) {
-         
+        
+        
+        // postavljamo sliku za startni prozor 
         gluLookAt(0, 0, 5,
                   0, 0 , 0,
                   0, 1, 0);
@@ -552,6 +628,8 @@ void on_display() {
     
         glBindTexture(GL_TEXTURE_2D, 0);
     }
+   
+    // na kraju postavljamo win prozor ako smo pobedili
     else if (win) {
         gluLookAt(0, 0, 5,
                   0, 0 , 0,
@@ -579,6 +657,7 @@ void on_display() {
             
         glBindTexture(GL_TEXTURE_2D, 0);
     }
+    // na kraju postavljamo gameOver prozor ako smo izgubili
     else if (gameOver) {
             
         gluLookAt(0, 0, 5,
@@ -609,13 +688,16 @@ void on_display() {
         glBindTexture(GL_TEXTURE_2D, 0);
 
     }
+    
     else {
+
+        // postavljanje pozadine
     
         gluLookAt(0, 0, 16,
                   0, 0 , 0,
                   0, 1, 0);
-            
-            
+        
+        
         glBindTexture(GL_TEXTURE_2D, texture[0]);
         
         glBegin(GL_QUADS);
@@ -643,60 +725,61 @@ void on_display() {
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         
-        
-
-        // 7 10 10
-        //2 5 10
+        // dok se blokovi slazu pomeramo kameru ka gore - kada je end = 0
+        // a kada je end = 1 prikazujemo celu kulu
         gluLookAt(eyeX, 5 + cameraEye/20.0, 10,
-                0, 0 + cameraCenter, 0,
-                0, 1, 0);
-        
+                    0, 0 + cameraCenter, 0,
+                    0, 1, 0);
 
-
-    //       draw_axes(5);
-
+        // postavljanje prvog bloka 
         glPushMatrix();
             base_cube();
         glPopMatrix();
         
-
-        if (!end) {
-        
+        if (!end) {    
+            // blok koji treba spustiti na prethodni
             glPushMatrix();
                 moving_cubes(h, red, green, blue);
             glPopMatrix();
         }
         
+        // ako je end = 1 i nismo pobedili crtamo poslednji blok koji se nije poklopio
         if (end && n < 100)
             draw_cube(blocks[n].x, blocks[n].y, blocks[n].red, blocks[n].green, blocks[n].blue);
-        
             
+        // crtamo vec postavljene blokove koje smo zapamtili u nizu blocks    
         for (int j = 0;j < i;j ++) {
 
             glPushMatrix();
-            draw_cube(blocks[j].x, blocks[j].y, blocks[j].red, blocks[j].green, blocks[j].blue);
+                draw_cube(blocks[j].x, blocks[j].y, blocks[j].red, blocks[j].green, blocks[j].blue);
             glPopMatrix();
-        
-            drop = 0;
+
+            
         }
+        // vracamo drop na 0 kako bismo mogli da spustimo naredni blok
+        drop = 0;
         
+        // ispisujemo score na kraju
         if(end && animation_parameter)
                 drawScore();
     }
     
+    
+    
     glutSwapBuffers();
 }
     
+
+
 void reset() {
     
     animation_ongoing = 0;
     animation_parameter = 0;
     drop = 0;
     h = 0.4 - 3.0;
-    lr = 1;
+    leftRight = 1;
     cameraCenter = 0;
     cameraEye = 0;
-    end = 0;
     
     for (int j = 0;j < 100;j ++) {
         blocks[j].x = 0.0;
@@ -712,14 +795,16 @@ void reset() {
     blue = 0.5;
     colorFirst = 0;
     colorSecond = 0;
-    n = 500;
-    gameOver = 0;
-    start = 1;
-    win = 0;
     eyeX = 7;
     fall = 1;
+    n = 500;
+    start = 1;
+    end = 0;
+    win = 0;
+    gameOver = 0;
 }
-
+    
+    
 void drawScore() {
     
     glMatrixMode(GL_MODELVIEW);
@@ -729,6 +814,7 @@ void drawScore() {
               0, 0, 0,
               0, 1, 0);
 
+    //niska u koju ispisujemo score
     char s[15];
     int len = 0;
     
@@ -745,6 +831,7 @@ void drawScore() {
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, s[j]);
     
     
+    //okvir za score
     glColor3f(1.0, 1.0, 1.0);
     glBegin(GL_QUADS);
         
@@ -755,4 +842,3 @@ void drawScore() {
         
     glEnd();
 }    
-
