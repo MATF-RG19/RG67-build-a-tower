@@ -1,10 +1,12 @@
 #include <GL/glut.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include <stdlib.h>
 #include <string.h>
 #include "image.h"
+#include "block.h"
+#include "tower.h"
 
 #define TIMER_INTERVAL 20
 #define TIMER_ID 0
@@ -12,26 +14,19 @@
 #define FILENAME1 "slike/start.bmp"
 #define FILENAME2 "slike/gameOver.bmp"
 #define FILENAME3 "slike/win.bmp"
+#define TOWER_SIZE 30
+#define BLOCK_SIZE 100
+#define TOWER_BLOCK_SIZE 300
 
-
-//struktura koja cuva x, y koordinate i rgb bloka
-struct Block {
-    
-    float y;
-    float x;
-    float red;
-    float green;
-    float blue;
-
-};
 
 /* PROMENLJIVE */
+
 
 // identifikatori tekstura
 static GLuint texture[4];
 
 // niz blokova
-struct Block blocks[100];
+struct Block blocks[BLOCK_SIZE];
 
 // promenljive za timer funkciju
 float animation_ongoing = 0;
@@ -87,20 +82,25 @@ static void on_timer(int id);
 static void initTexture();
 // vraca promenljive na pocetno stanje
 void reset();
-// crta pocetni blok na koji treba da slazemo ostale
-void base_cube();
-// crta blok dok se pomera
-void moving_cubes(float y, float red, float green, float blue);
-// crta vec postavljene blokove
-void draw_cube(float x, float y, float red, float green, float blue);
+
 // postavlja boju sledeceg bloka
 void setColor();
 // ispisuje rezultat - broj postavljenih blokova
 void drawScore();
-
+// vraca random broj iz intervala [min, max]
+int randNum(int min, int max);
+// postavlja vec izgradjenje kule u pozadini
+void set_towers();
 
 
 int main(int argc, char **argv){
+    
+    srand(time(0));
+
+    //inicijalizacija niza towers
+    initialize_tower_blocks();
+    
+    set_towers();
    
     // inicijalizuje se glut 
 
@@ -208,6 +208,15 @@ static void initTexture() {
 }
 
 
+
+int randNum(int min, int max) {
+    
+  	int range = max - min + 1;
+  	int num = rand() % range + min;
+  	return num;
+}
+
+
 void on_keyboard(unsigned char key, int x, int y) {
     switch(key) {
         case 'd': // drop block 
@@ -232,17 +241,18 @@ void on_keyboard(unsigned char key, int x, int y) {
     }
 }
 
+
 void on_timer(int id) {
     
     if (id != TIMER_ID) 
         return;
-        
     
     if (!end) {
-    
+        
+        
         // pomocni parametar za uvecavanje cameraCenter i cameraEye
         float pom;
-    
+        
         // uvecavamo animation_parameter, cameraCenter i cameraEye
         // sto vise blokova ima to brze treba da se krecu
         
@@ -313,15 +323,16 @@ void on_timer(int id) {
         // kada pritisnemo d zapisujemo i-ti blok u niz blocks
         if (drop) {
             
+            //-3.715232
+
             blocks[i].x = - leftRight*5*cos(animation_parameter/40.0);
             blocks[i].y = h - 0.1;
             blocks[i].red = red;
             blocks[i].green = green;
             blocks[i].blue = blue;
             
-            
-            // ako se ne poklapa sa prethodnim zavrsili smo igricu
-            if (fabs(blocks[i].x - blocks[i-1].x) > 2.0) {
+            if ((i == 0 && fabs(blocks[i].x) > 2.0) || (i > 0 && fabs(blocks[i].x - blocks[i-1].x) > 2.0)) {
+                
                 //pamtimo koji blok je bio poslednji kako bismo ga spustili kasnije
                 n = i;
                 k = n - 1;
@@ -360,6 +371,37 @@ void on_timer(int id) {
                     cameraCenter += 0.05;
             
             
+            
+        }
+        
+        
+        // namestamo blokove za svaku od j kula koje se nalaze u pozadini
+        for (int j = 0;j < TOWER_SIZE;j ++) {
+ 
+            
+            towers[j].param += randNum(1, 4);
+            
+            float xj = towers[j].b[towers[j].p - 1].x;
+            float num = randNum(0, 2) / 10.0;
+
+                
+            if (towers[j].p < TOWER_BLOCK_SIZE && !(fabs(towers[j].b[0].x- towers[j].lr*5*cos(towers[j].param/40.0) - xj) > num)) {
+                
+                towers[j].b[towers[j].p].x = towers[j].b[0].x - towers[j].lr*5*cos(towers[j].param/40.0);
+                towers[j].b[towers[j].p].y = towers[j].h - 0.1;
+                towers[j].b[towers[j].p].z = towers[j].b[0].z;
+                towers[j].b[towers[j].p].red = towers[j].rd;
+                towers[j].b[towers[j].p].green = towers[j].gr;
+                towers[j].b[towers[j].p].blue = towers[j].bl;
+                
+                towers[j].p ++;
+                towers[j].h += 0.15;
+                towers[j].param = 0;
+                towers[j].lr *= -1;
+                
+                setColorTower(j);
+
+            }
             
         }
     
@@ -553,39 +595,6 @@ void on_reshape(int width, int height) {
 }
 
 
-void base_cube() {
-    
-    glColor3f(0.1, 0.7, 0.4);
-    glTranslatef(- 0.8, -3.0, 0);
-    glScalef(2, 0.3, 2);
-    glutSolidCube(1);
-}
-
-void moving_cubes(float y, float red, float green, float blue) {
-    
-            
-    glPushMatrix();
-        glColor3f(red, green, blue);
-        glTranslatef(- 0.8 - leftRight*5*cos(animation_parameter/40.0), y, 0);
-        glScalef(2, 0.3, 2);
-        glutSolidCube(1);
-    glPopMatrix();
-        
-
-}
-
-
-void draw_cube(float x, float y, float red, float green, float blue) {
-    
-    glPushMatrix();
-        glColor3f(red, green, blue);
-        glTranslatef(x- 0.8, y, 0);
-        glScalef(2, 0.3, 2);
-        glutSolidCube(1);
-    glPopMatrix();
-}
-
-
 
 void on_display() {
     
@@ -693,7 +702,7 @@ void on_display() {
 
         // postavljanje pozadine
     
-        gluLookAt(0, 0, 16,
+        gluLookAt(0, 0, 24,
                   0, 0 , 0,
                   0, 1, 0);
         
@@ -705,16 +714,16 @@ void on_display() {
             glNormal3f(0, 0, 1);
 
             glTexCoord2f(0, 0);
-            glVertex3f(-9.15, -9.15,- 6);
+            glVertex3f(-12.77, -12.77, - 6);
 
             glTexCoord2f(1, 0);
-            glVertex3f(9.15, -9.15, -6);
+            glVertex3f(12.77, -12.77, -6);
 
             glTexCoord2f(1, 1);
-            glVertex3f(9.15, 9.15, -6);
+            glVertex3f(12.77, 12.77, -6);
 
             glTexCoord2f(0, 1);
-            glVertex3f(-9.15, 9.15, -6);
+            glVertex3f(-12.77, 12.77, -6);
         
         glEnd();
             
@@ -730,40 +739,62 @@ void on_display() {
         gluLookAt(eyeX, 5 + cameraEye/20.0, 10,
                     0, 0 + cameraCenter, 0,
                     0, 1, 0);
+        
+        // crtanje kula u pozadini
+        if (!end) {
+            
+            for (int j = 0;j < TOWER_SIZE;j ++) {
+                    
+                    glPushMatrix();
+                        moving_cubes_tower(towers[j].b[0].x, towers[j].h, towers[j].b[0].z, towers[j].rd, towers[j].gr, towers[j].bl, towers[j].param, towers[j].lr);
+                    glPopMatrix();
+                }
+        }
+        
+        for (int j = 0;j < TOWER_SIZE;j ++) {            
+            for (int k = 0;k < towers[j].p;k ++) {
+            
+                glPushMatrix();
+                    draw_cube_tower(towers[j].b[k].x, towers[j].b[k].y, towers[j].b[k].z,  towers[j].b[k].red, towers[j].b[k].green, towers[j].b[k].blue);
+                glPopMatrix();
+            }
+        }
+        
 
         // postavljanje prvog bloka 
         glPushMatrix();
             base_cube();
         glPopMatrix();
         
+
         if (!end) {    
             // blok koji treba spustiti na prethodni
             glPushMatrix();
-                moving_cubes(h, red, green, blue);
+                moving_cubes(h, red, green, blue, animation_parameter, leftRight);
             glPopMatrix();
         }
         
-        // ako je end = 1 i nismo pobedili crtamo poslednji blok koji se nije poklopio
-        if (end && n < 100)
-            draw_cube(blocks[n].x, blocks[n].y, blocks[n].red, blocks[n].green, blocks[n].blue);
-            
+        
         // crtamo vec postavljene blokove koje smo zapamtili u nizu blocks    
         for (int j = 0;j < i;j ++) {
 
             glPushMatrix();
                 draw_cube(blocks[j].x, blocks[j].y, blocks[j].red, blocks[j].green, blocks[j].blue);
             glPopMatrix();
-
             
         }
         // vracamo drop na 0 kako bismo mogli da spustimo naredni blok
         drop = 0;
         
+        // ako je end = 1 i nismo pobedili crtamo poslednji blok koji se nije poklopio
+        if (end && n < 100) 
+            draw_cube(blocks[n].x, blocks[n].y, blocks[n].red, blocks[n].green, blocks[n].blue);
+        
+        
         // ispisujemo score na kraju
         if(end && animation_parameter)
                 drawScore();
     }
-    
     
     
     glutSwapBuffers();
@@ -781,7 +812,7 @@ void reset() {
     cameraCenter = 0;
     cameraEye = 0;
     
-    for (int j = 0;j < 100;j ++) {
+    for (int j = 0;j < BLOCK_SIZE;j ++) {
         blocks[j].x = 0.0;
         blocks[j].y = 0.0;
         blocks[j].red = 0.0;
@@ -802,6 +833,59 @@ void reset() {
     end = 0;
     win = 0;
     gameOver = 0;
+    
+    for (int j = 0;j < TOWER_SIZE;j ++) {
+        for (int k = 0;k < towers[j].p;k ++) {
+            towers[j].b[k].x = 0;
+            towers[j].b[k].z = 0;
+            towers[j].b[k].y = 0;
+            towers[j].b[k].red = 0;
+            towers[j].b[k].green = 0;
+            towers[j].b[k].blue = 0;
+        }
+        towers[j].param = 0;
+        towers[j].h = 0;
+        towers[j].lr = 0;
+        towers[j].p = 0;
+        towers[j].rd = 0;
+        towers[j].gr = 0;
+        towers[j].bl = 0;
+        towers[j].cf = 0;
+        towers[j].cs = 0;
+    }
+    
+    initialize_tower_blocks();
+    set_towers();
+}
+
+void set_towers() {
+    
+    int broj = randNum(0, 1);
+        
+        for (int j = broj;j < TOWER_SIZE;j += 2) {
+            
+            int s = randNum(0, 80);
+            
+            for (int k = 1; k < s;k ++) {
+                
+                float r = randNum(0, 1) / 10.0;
+                
+                towers[j].b[towers[j].p].x = towers[j].b[towers[j].p - 1].x - r;
+                towers[j].b[towers[j].p].y = towers[j].h - 0.1;
+                towers[j].b[towers[j].p].z = towers[j].b[0].z;
+                towers[j].b[towers[j].p].red = towers[j].rd;
+                towers[j].b[towers[j].p].green = towers[j].gr;
+                towers[j].b[towers[j].p].blue = towers[j].bl;
+                
+                towers[j].p ++;
+                towers[j].h += 0.15;
+                towers[j].param = 0;
+                towers[j].lr *= -1;
+                
+                setColorTower(j);
+            }
+        }
+    
 }
     
     
